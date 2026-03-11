@@ -499,7 +499,7 @@
   function showQrSection() {
     showSection(qrSection);
     if (!qrGenerated) {
-      const url = window.location.href.replace(/admin\.html.*$/, 'index.html');
+      const url = window.location.href.replace(/admin(\.html)?.*$/, 'index.html');
       qrUrl.textContent = url;
       qrCode.innerHTML = '';
       new QRCode(qrCode, { text: url, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.H });
