@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>차량 연락처 조회</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>차량 연락처 조회</h1>
+      <p class="subtitle">차량번호 뒷 4자리와 조회 비밀번호를 입력하세요</p>
+
+      <div class="form-group">
+        <label for="vehicleNumber">차량번호 뒷 4자리</label>
+        <input type="text" id="vehicleNumber" placeholder="예: 3456" maxlength="4" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <div class="form-group">
+        <label for="password">조회 비밀번호</label>
+        <input type="password" id="password" placeholder="조회 비밀번호 입력">
+      </div>
+
+      <button class="btn btn-primary" id="searchBtn">조회</button>
+
+      <div class="loading" id="loading">
+        <span class="spinner"></span> 조회 중...
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <!-- 동일 뒷번호 차량 선택 목록 -->
+      <div class="select-list" id="selectList" style="display:none;">
+        <p class="select-title">동일한 뒷번호 차량이 여러 대 있습니다. 선택하세요:</p>
+        <div id="selectListItems"></div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="vehicle-info" id="vehicleInfo"></div>
+        <div class="phone-number" id="phoneResult"></div>
+      </div>
+    </div>
+
+    <div class="nav-link">
+      <a href="admin.html">관리자 페이지</a>
+    </div>
+  </div>
+
+  <script src="js/crypto.js"></script>
+  <script src="js/user.js"></script>
+</body>
+</html>

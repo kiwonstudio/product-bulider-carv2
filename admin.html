@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 - 차량 연락처 관리</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 로그인 섹션 -->
+    <div class="section active" id="loginSection">
+      <div class="card">
+        <h1>관리자 로그인</h1>
+        <div class="form-group" id="loginPwGroup">
+          <label for="adminPassword">관리자 비밀번호</label>
+          <input type="password" id="adminPassword" placeholder="관리자 비밀번호 입력">
+        </div>
+        <button class="btn btn-primary" id="loginBtn">로그인</button>
+        <div class="error-msg" id="loginError"></div>
+
+        <!-- 초기 설정 안내 -->
+        <div id="initSetup" style="display:none; margin-top:20px;">
+          <p style="color:var(--text-light); font-size:0.9rem; margin-bottom:12px;">
+            관리자 비밀번호가 설정되지 않았습니다. 새 비밀번호를 설정하세요.
+          </p>
+          <div class="form-group">
+            <label for="newAdminPw">관리자 비밀번호</label>
+            <input type="password" id="newAdminPw" placeholder="관리자 비밀번호">
+          </div>
+          <div class="form-group">
+            <label for="confirmAdminPw">관리자 비밀번호 확인</label>
+            <input type="password" id="confirmAdminPw" placeholder="비밀번호 확인">
+          </div>
+          <button class="btn btn-primary" id="setupBtn">설정 완료</button>
+          <div class="error-msg" id="setupError"></div>
+        </div>
+      </div>
+      <div class="nav-link">
+        <a href="index.html">사용자 조회 페이지</a>
+      </div>
+    </div>
+
+    <!-- 대시보드 섹션 -->
+    <div class="section" id="dashboardSection">
+
+      <!-- 조회 비밀번호 설정/입력 카드 -->
+      <div class="card" id="lookupPwCard" style="display:none;">
+        <h2 id="lookupPwCardTitle">조회 비밀번호 설정</h2>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:12px;" id="lookupPwCardDesc">
+          사용자가 차량 조회 시 사용할 비밀번호를 설정하세요.
+        </p>
+        <div class="form-group">
+          <label for="dashLookupPw">조회 비밀번호</label>
+          <input type="password" id="dashLookupPw" placeholder="조회 비밀번호">
+        </div>
+        <div class="form-group" id="dashLookupPwConfirmGroup">
+          <label for="dashLookupPwConfirm">비밀번호 확인</label>
+          <input type="password" id="dashLookupPwConfirm" placeholder="비밀번호 확인">
+        </div>
+        <button class="btn btn-primary" id="dashLookupPwBtn">확인</button>
+        <div class="error-msg" id="dashLookupPwError"></div>
+      </div>
+
+      <div class="card">
+        <h1>차량 관리</h1>
+
+        <div id="vehicleListArea">
+          <div class="empty-state" id="emptyState">등록된 차량이 없습니다.</div>
+          <table class="vehicle-table" id="vehicleTable" style="display:none;">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll"></th>
+                <th>차량번호</th>
+                <th>연락처</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="vehicleTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-danger btn-sm" id="deleteSelectedBtn">선택 삭제</button>
+          <button class="btn btn-primary btn-sm" id="addVehicleBtn">차량 등록</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" id="changeLookupPwBtn">조회 비밀번호 변경</button>
+          <button class="btn btn-outline btn-sm" id="showQrBtn">QR 코드</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-success btn-sm" id="saveDataBtn">파일로 내보내기</button>
+          <button class="btn btn-outline btn-sm" id="loadDataBtn">파일 불러오기</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" id="changeAdminPwBtn">관리자 비밀번호 변경</button>
+          <button class="btn btn-outline btn-sm" id="logoutBtn">로그아웃</button>
+        </div>
+        <input type="file" id="fileInput" accept=".json" style="display:none;">
+
+        <div class="success-msg" id="dashboardMsg"></div>
+      </div>
+    </div>
+
+    <!-- QR 코드 섹션 -->
+    <div class="section" id="qrSection">
+      <div class="card">
+        <h1>QR 코드</h1>
+        <div class="qr-container qr-print-area">
+          <div id="qrCode"></div>
+          <p class="qr-url" id="qrUrl"></p>
+          <p style="color:var(--text-light); font-size:0.85rem; margin-top:8px;">
+            이 QR 코드를 스캔하면 차량 조회 페이지로 이동합니다.
+          </p>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" id="printQrBtn">인쇄</button>
+          <button class="btn btn-outline btn-sm" id="downloadQrBtn">이미지 저장</button>
+          <button class="btn btn-outline btn-sm" id="backFromQrBtn">돌아가기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 등록/수정 모달 -->
+    <div class="modal-overlay" id="vehicleModal">
+      <div class="modal">
+        <button class="modal-close" id="modalCloseBtn">&times;</button>
+        <h2 id="modalTitle">차량 등록</h2>
+        <input type="hidden" id="editVehicleId">
+        <div class="form-group">
+          <label for="modalVehicleNum">차량번호</label>
+          <input type="text" id="modalVehicleNum" placeholder="예: 12가 3456">
+        </div>
+        <div class="form-group">
+          <label for="modalPhone">연락처</label>
+          <input type="tel" id="modalPhone" placeholder="예: 01012345678">
+        </div>
+        <button class="btn btn-primary" id="modalSaveBtn">저장</button>
+        <div class="error-msg" id="modalError"></div>
+      </div>
+    </div>
+
+    <!-- 조회 비밀번호 변경 모달 -->
+    <div class="modal-overlay" id="lookupPwModal">
+      <div class="modal">
+        <button class="modal-close" id="lookupPwCloseBtn">&times;</button>
+        <h2>조회 비밀번호 변경</h2>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:16px;">
+          변경 시 모든 차량의 연락처가 새 비밀번호로 재암호화됩니다.
+        </p>
+        <div class="form-group">
+          <label for="currentLookupPw">현재 조회 비밀번호</label>
+          <input type="password" id="currentLookupPw" placeholder="현재 조회 비밀번호">
+        </div>
+        <div class="form-group">
+          <label for="changeLookupPw">새 조회 비밀번호</label>
+          <input type="password" id="changeLookupPw" placeholder="새 조회 비밀번호">
+        </div>
+        <div class="form-group">
+          <label for="changeLookupPwConfirm">새 비밀번호 확인</label>
+          <input type="password" id="changeLookupPwConfirm" placeholder="비밀번호 확인">
+        </div>
+        <button class="btn btn-primary" id="changeLookupPwSaveBtn">변경</button>
+        <div class="error-msg" id="changeLookupPwError"></div>
+      </div>
+    </div>
+
+    <!-- 관리자 비밀번호 변경 모달 -->
+    <div class="modal-overlay" id="adminPwModal">
+      <div class="modal">
+        <button class="modal-close" id="adminPwCloseBtn">&times;</button>
+        <h2>관리자 비밀번호 변경</h2>
+        <div class="form-group">
+          <label for="currentAdminPw">현재 관리자 비밀번호</label>
+          <input type="password" id="currentAdminPw" placeholder="현재 비밀번호">
+        </div>
+        <div class="form-group">
+          <label for="newAdminPwChange">새 관리자 비밀번호</label>
+          <input type="password" id="newAdminPwChange" placeholder="새 비밀번호">
+        </div>
+        <div class="form-group">
+          <label for="newAdminPwChangeConfirm">새 비밀번호 확인</label>
+          <input type="password" id="newAdminPwChangeConfirm" placeholder="비밀번호 확인">
+        </div>
+        <button class="btn btn-primary" id="adminPwSaveBtn">변경</button>
+        <div class="error-msg" id="adminPwError"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/crypto.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
