@@ -54,6 +54,7 @@
   const saveDataBtn = $('saveDataBtn');
   const loadDataBtn = $('loadDataBtn');
   const fileInput = $('fileInput');
+  const publishBtn = $('publishBtn');
   const logoutBtn = $('logoutBtn');
   const dashboardMsg = $('dashboardMsg');
 
@@ -140,7 +141,7 @@
       } catch (e) {}
     }
     try {
-      const resp = await fetch('data/vehicles.json?' + Date.now());
+      const resp = await fetch('/api/vehicles');
       if (resp.ok) {
         appData = await resp.json();
         if (!appData.vehicles) appData.vehicles = [];
@@ -559,6 +560,30 @@
   adminPwCloseBtn.addEventListener('click', closeAdminPwModal);
   adminPwSaveBtn.addEventListener('click', handleChangeAdminPw);
   adminPwModal.addEventListener('click', e => { if (e.target === adminPwModal) closeAdminPwModal(); });
+
+  publishBtn.addEventListener('click', async function() {
+    publishBtn.disabled = true;
+    publishBtn.textContent = '저장 중...';
+    try {
+      const resp = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appData)
+      });
+      const result = await resp.json();
+      if (result.success) {
+        showDashboardMsg('서버에 저장되었습니다.', false);
+      } else {
+        showDashboardMsg('서버 저장 실패: ' + (result.error || '알 수 없는 오류'), true);
+      }
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('서버 연결에 실패했습니다.', true);
+    } finally {
+      publishBtn.disabled = false;
+      publishBtn.textContent = '서버에 저장';
+    }
+  });
 
   saveDataBtn.addEventListener('click', saveData);
   loadDataBtn.addEventListener('click', handleLoadData);
