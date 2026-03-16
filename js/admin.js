@@ -160,6 +160,24 @@
   }
 
   async function loadData() {
+    // 서버 데이터를 우선 시도 (Single Source of Truth)
+    try {
+      const resp = await fetch('/api/vehicles');
+      if (resp.ok) {
+        const serverData = await resp.json();
+        if (serverData && serverData.adminPasswordHash) {
+          appData = serverData;
+          if (!appData.vehicles) appData.vehicles = [];
+          if (typeof appData.version === 'undefined') appData.version = 0;
+          saveToStorage(); // localStorage도 최신으로 갱신
+          return;
+        }
+      }
+    } catch (e) {
+      // 네트워크 오류 시 localStorage 폴백
+    }
+
+    // 서버에 데이터가 없거나 네트워크 오류 시 localStorage 사용
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
@@ -172,14 +190,6 @@
         }
       } catch (e) {}
     }
-    try {
-      const resp = await fetch('/api/vehicles');
-      if (resp.ok) {
-        appData = await resp.json();
-        if (!appData.vehicles) appData.vehicles = [];
-        if (typeof appData.version === 'undefined') appData.version = 0;
-      }
-    } catch (e) {}
   }
 
   async function fetchFromServer() {
