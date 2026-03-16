@@ -11,6 +11,7 @@
   const errorMsg = document.getElementById('errorMsg');
   const result = document.getElementById('result');
   const vehicleInfo = document.getElementById('vehicleInfo');
+  const ownerName = document.getElementById('ownerName');
   const phoneResult = document.getElementById('phoneResult');
   const selectList = document.getElementById('selectList');
   const selectListItems = document.getElementById('selectListItems');
@@ -96,7 +97,7 @@
     vehicles.forEach(v => {
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline select-item';
-      btn.textContent = v.vehicleNumber;
+      btn.textContent = v.vehicleNumber + (v.name ? ' (' + v.name + ')' : '');
       btn.addEventListener('click', async () => {
         selectList.classList.remove('show');
         selectList.style.display = 'none';
@@ -115,6 +116,7 @@
   async function showResult(vehicle, data, password) {
     const phone = await CryptoUtil.decrypt(vehicle.phoneEncrypted, password, data.lookupSalt);
     vehicleInfo.textContent = '차량번호: ' + vehicle.vehicleNumber;
+    ownerName.textContent = vehicle.name ? '이름: ' + vehicle.name : '';
     phoneResult.innerHTML = '<a href="tel:' + phone + '">' + formatPhone(phone) + '</a>';
     result.classList.add('show');
     selectList.classList.remove('show');

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>차량 등록 신청</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>차량 등록 신청</h1>
+      <p class="subtitle">차량 정보를 입력하면 관리자 승인 후 등록됩니다</p>
+
+      <div class="form-group">
+        <label for="regName">이름</label>
+        <input type="text" id="regName" placeholder="예: 홍길동" autocomplete="name">
+      </div>
+
+      <div class="form-group">
+        <label for="regVehicleNum">차량번호</label>
+        <input type="text" id="regVehicleNum" placeholder="예: 12가 3456">
+      </div>
+
+      <div class="form-group">
+        <label for="regPhone">휴대폰번호</label>
+        <input type="tel" id="regPhone" placeholder="예: 01012345678" inputmode="numeric">
+      </div>
+
+      <button class="btn btn-primary" id="regSaveBtn">등록 신청</button>
+
+      <div class="loading" id="regLoading">
+        <span class="spinner"></span> 등록 중...
+      </div>
+
+      <div class="error-msg" id="regError"></div>
+      <div class="success-msg" id="regSuccess"></div>
+    </div>
+
+    <!-- QR 코드 섹션 -->
+    <div class="card" id="qrCard" style="display:none;">
+      <h2 style="text-align:center;">이 페이지 QR 코드</h2>
+      <div class="qr-container qr-print-area">
+        <div id="qrCode"></div>
+        <p class="qr-url" id="qrUrl"></p>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-top:8px;">
+          이 QR 코드를 스캔하면 차량 등록 페이지로 이동합니다.
+        </p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-sm" id="printQrBtn">인쇄</button>
+        <button class="btn btn-outline btn-sm" id="downloadQrBtn">이미지 저장</button>
+      </div>
+    </div>
+
+    <div class="btn-group" style="justify-content:center;">
+      <button class="btn btn-outline btn-sm" id="showQrBtn">이 페이지 QR 코드 보기</button>
+    </div>
+
+    <div class="nav-link">
+      <a href="index.html">차량 조회 페이지</a>
+    </div>
+  </div>
+
+  <script src="js/register.js"></script>
+</body>
+</html>

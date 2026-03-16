@@ -6,6 +6,7 @@
   <title>관리자 - 차량 연락처 관리</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -73,6 +74,7 @@
             <thead>
               <tr>
                 <th><input type="checkbox" id="selectAll"></th>
+                <th>이름</th>
                 <th>차량번호</th>
                 <th>연락처</th>
                 <th>관리</th>
@@ -92,18 +94,44 @@
         </div>
         <div class="btn-group">
           <button class="btn btn-success btn-sm" id="publishBtn">서버에 저장</button>
+          <button class="btn btn-outline btn-sm" id="fetchServerBtn">서버에서 불러오기</button>
         </div>
         <div class="btn-group">
-          <button class="btn btn-outline btn-sm" id="saveDataBtn">파일로 내보내기</button>
-          <button class="btn btn-outline btn-sm" id="loadDataBtn">파일 불러오기</button>
+          <button class="btn btn-outline btn-sm" id="saveDataBtn">엑셀로 내보내기</button>
+          <button class="btn btn-outline btn-sm" id="loadDataBtn">엑셀 불러오기</button>
         </div>
         <div class="btn-group">
           <button class="btn btn-outline btn-sm" id="changeAdminPwBtn">관리자 비밀번호 변경</button>
           <button class="btn btn-outline btn-sm" id="logoutBtn">로그아웃</button>
         </div>
-        <input type="file" id="fileInput" accept=".json" style="display:none;">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
 
         <div class="success-msg" id="dashboardMsg"></div>
+      </div>
+
+      <!-- 등록 대기 목록 -->
+      <div class="card" id="pendingCard" style="display:none;">
+        <h2>등록 대기 목록 <span class="pending-badge" id="pendingBadge">0</span></h2>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:12px;">
+          사용자가 등록 신청한 차량입니다. 승인하면 차량 목록에 추가됩니다.
+        </p>
+        <table class="vehicle-table" id="pendingTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="pendingSelectAll"></th>
+              <th>이름</th>
+              <th>차량번호</th>
+              <th>연락처</th>
+              <th>신청일</th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody"></tbody>
+        </table>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" id="approveSelectedBtn">선택 승인</button>
+          <button class="btn btn-danger btn-sm" id="rejectSelectedBtn">선택 거절</button>
+        </div>
+        <div class="error-msg" id="pendingError"></div>
       </div>
     </div>
 
@@ -132,6 +160,10 @@
         <button class="modal-close" id="modalCloseBtn">&times;</button>
         <h2 id="modalTitle">차량 등록</h2>
         <input type="hidden" id="editVehicleId">
+        <div class="form-group">
+          <label for="modalName">이름</label>
+          <input type="text" id="modalName" placeholder="예: 홍길동">
+        </div>
         <div class="form-group">
           <label for="modalVehicleNum">차량번호</label>
           <input type="text" id="modalVehicleNum" placeholder="예: 12가 3456">

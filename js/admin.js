@@ -1,14 +1,14 @@
 /**
  * admin.js - 관리자 CRUD 로직
  * 연락처는 조회 비밀번호 하나로만 암호화
- * 데이터는 localStorage에 자동 저장
+ * 데이터는 localStorage에 자동 저장, 서버와 동기화
  */
 
 (function() {
   const STORAGE_KEY = 'carSearchAppData';
 
   // State
-  let appData = { adminPasswordHash: '', adminSalt: '', lookupPasswordHash: '', lookupSalt: '', vehicles: [] };
+  let appData = { adminPasswordHash: '', adminSalt: '', lookupPasswordHash: '', lookupSalt: '', vehicles: [], version: 0 };
   let adminPassword = '';
   let lookupPassword = '';
   let nextId = 1;
@@ -55,8 +55,19 @@
   const loadDataBtn = $('loadDataBtn');
   const fileInput = $('fileInput');
   const publishBtn = $('publishBtn');
+  const fetchServerBtn = $('fetchServerBtn');
   const logoutBtn = $('logoutBtn');
   const dashboardMsg = $('dashboardMsg');
+
+  // Pending
+  const pendingCard = $('pendingCard');
+  const pendingBadge = $('pendingBadge');
+  const pendingTable = $('pendingTable');
+  const pendingTableBody = $('pendingTableBody');
+  const pendingSelectAll = $('pendingSelectAll');
+  const approveSelectedBtn = $('approveSelectedBtn');
+  const rejectSelectedBtn = $('rejectSelectedBtn');
+  const pendingError = $('pendingError');
 
   // QR
   const qrCode = $('qrCode');
@@ -70,6 +81,7 @@
   const modalCloseBtn = $('modalCloseBtn');
   const modalTitle = $('modalTitle');
   const editVehicleId = $('editVehicleId');
+  const modalName = $('modalName');
   const modalVehicleNum = $('modalVehicleNum');
   const modalPhone = $('modalPhone');
   const modalSaveBtn = $('modalSaveBtn');
@@ -136,6 +148,7 @@
         if (parsed && parsed.adminPasswordHash) {
           appData = parsed;
           if (!appData.vehicles) appData.vehicles = [];
+          if (typeof appData.version === 'undefined') appData.version = 0;
           return;
         }
       } catch (e) {}
@@ -145,8 +158,32 @@
       if (resp.ok) {
         appData = await resp.json();
         if (!appData.vehicles) appData.vehicles = [];
+        if (typeof appData.version === 'undefined') appData.version = 0;
       }
     } catch (e) {}
+  }
+
+  async function fetchFromServer() {
+    try {
+      const resp = await fetch('/api/vehicles');
+      if (resp.ok) {
+        const serverData = await resp.json();
+        if (!serverData.vehicles) serverData.vehicles = [];
+        if (typeof serverData.version === 'undefined') serverData.version = 0;
+        appData = serverData;
+        saveToStorage();
+        updateNextId();
+        lookupPassword = '';
+        showLookupPwCard();
+        await renderVehicleList();
+        showDashboardMsg('서버에서 최신 데이터를 불러왔습니다. (' + appData.vehicles.length + '대)', false);
+      } else {
+        showDashboardMsg('서버에서 데이터를 불러올 수 없습니다.', true);
+      }
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('서버 연결에 실패했습니다.', true);
+    }
   }
 
   function updateNextId() {
@@ -211,6 +248,7 @@
 
     hideLookupPwCard();
     await renderVehicleList();
+    await loadPendingRegistrations();
   }
 
   // ===== Login =====
@@ -234,6 +272,7 @@
     showSection(dashboardSection);
     showLookupPwCard();
     await renderVehicleList();
+    await loadPendingRegistrations();
   }
 
   async function handleSetup() {
@@ -251,6 +290,7 @@
     showSection(dashboardSection);
     showLookupPwCard();
     await renderVehicleList();
+    await loadPendingRegistrations();
   }
 
   // ===== Vehicle List =====
@@ -270,7 +310,6 @@
       const tr = document.createElement('tr');
       let phoneMasked = '***-****-****';
 
-      // 조회 비밀번호가 입력된 경우에만 복호화
       if (lookupPassword) {
         try {
           const phone = await CryptoUtil.decrypt(v.phoneEncrypted, lookupPassword, appData.lookupSalt);
@@ -282,6 +321,7 @@
 
       tr.innerHTML =
         '<td><input type="checkbox" class="vehicle-check" data-id="' + v.id + '"></td>' +
+        '<td>' + escapeHtml(v.name || '') + '</td>' +
         '<td>' + escapeHtml(v.vehicleNumber) + '</td>' +
         '<td>' + phoneMasked + '</td>' +
         '<td><button class="btn btn-outline btn-sm edit-btn" data-id="' + v.id + '">수정</button></td>';
@@ -292,6 +332,139 @@
       btn.addEventListener('click', () => openEditModal(parseInt(btn.dataset.id)));
     });
   }
+
+  // ===== Pending Registrations =====
+  let pendingList = [];
+
+  async function loadPendingRegistrations() {
+    try {
+      const resp = await fetch('/api/register');
+      if (resp.ok) {
+        const data = await resp.json();
+        pendingList = data.pending || [];
+        renderPendingList();
+      }
+    } catch (e) {
+      console.error('Failed to load pending registrations', e);
+    }
+  }
+
+  function renderPendingList() {
+    pendingTableBody.innerHTML = '';
+
+    if (pendingList.length === 0) {
+      pendingCard.style.display = 'none';
+      return;
+    }
+
+    pendingCard.style.display = '';
+    pendingBadge.textContent = pendingList.length;
+
+    for (const p of pendingList) {
+      const tr = document.createElement('tr');
+      const date = p.registeredAt ? new Date(p.registeredAt).toLocaleDateString('ko-KR') : '';
+      tr.innerHTML =
+        '<td><input type="checkbox" class="pending-check" data-id="' + p.id + '"></td>' +
+        '<td>' + escapeHtml(p.name) + '</td>' +
+        '<td>' + escapeHtml(p.vehicleNumber) + '</td>' +
+        '<td>' + escapeHtml(p.phone) + '</td>' +
+        '<td style="font-size:0.8rem;">' + date + '</td>';
+      pendingTableBody.appendChild(tr);
+    }
+  }
+
+  pendingSelectAll.addEventListener('change', function() {
+    document.querySelectorAll('.pending-check').forEach(cb => { cb.checked = pendingSelectAll.checked; });
+  });
+
+  approveSelectedBtn.addEventListener('click', async function() {
+    if (!lookupPassword) {
+      showDashboardMsg('먼저 조회 비밀번호를 입력해주세요.', true);
+      showLookupPwCard();
+      return;
+    }
+
+    const checked = document.querySelectorAll('.pending-check:checked');
+    if (checked.length === 0) {
+      showError(pendingError, '승인할 항목을 선택하세요.');
+      setTimeout(() => pendingError.classList.remove('show'), 3000);
+      return;
+    }
+
+    const approvedIds = Array.from(checked).map(cb => parseInt(cb.dataset.id));
+    const approvedItems = pendingList.filter(p => approvedIds.includes(p.id));
+
+    // 등록된 차량 목록에서 중복 체크
+    for (const item of approvedItems) {
+      const norm = item.vehicleNumber.replace(/\s+/g, '');
+      const dup = appData.vehicles.find(v => v.vehicleNumber.replace(/\s+/g, '') === norm);
+      if (dup) {
+        showError(pendingError, '이미 등록된 차량번호가 있습니다: ' + item.vehicleNumber);
+        setTimeout(() => pendingError.classList.remove('show'), 3000);
+        return;
+      }
+    }
+
+    try {
+      // 승인된 차량 추가 (암호화)
+      for (const item of approvedItems) {
+        const phoneEncrypted = await CryptoUtil.encrypt(item.phone, lookupPassword, appData.lookupSalt);
+        appData.vehicles.push({
+          id: nextId++,
+          name: item.name,
+          vehicleNumber: item.vehicleNumber,
+          phoneEncrypted
+        });
+      }
+
+      saveToStorage();
+      await renderVehicleList();
+
+      // 서버에서 대기 항목 삭제
+      await fetch('/api/register', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: approvedIds })
+      });
+
+      pendingList = pendingList.filter(p => !approvedIds.includes(p.id));
+      pendingSelectAll.checked = false;
+      renderPendingList();
+      showDashboardMsg(approvedIds.length + '대의 차량이 승인되었습니다.', false);
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('승인 처리 중 오류가 발생했습니다.', true);
+    }
+  });
+
+  rejectSelectedBtn.addEventListener('click', async function() {
+    const checked = document.querySelectorAll('.pending-check:checked');
+    if (checked.length === 0) {
+      showError(pendingError, '거절할 항목을 선택하세요.');
+      setTimeout(() => pendingError.classList.remove('show'), 3000);
+      return;
+    }
+
+    if (!confirm(checked.length + '건의 등록 신청을 거절하시겠습니까?')) return;
+
+    const rejectedIds = Array.from(checked).map(cb => parseInt(cb.dataset.id));
+
+    try {
+      await fetch('/api/register', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: rejectedIds })
+      });
+
+      pendingList = pendingList.filter(p => !rejectedIds.includes(p.id));
+      pendingSelectAll.checked = false;
+      renderPendingList();
+      showDashboardMsg(rejectedIds.length + '건의 신청이 거절되었습니다.', false);
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('거절 처리 중 오류가 발생했습니다.', true);
+    }
+  });
 
   // ===== Select All / Delete =====
   selectAll.addEventListener('change', function() {
@@ -316,6 +489,7 @@
     if (!lookupPassword) { showDashboardMsg('먼저 조회 비밀번호를 입력해주세요.', true); showLookupPwCard(); return; }
     modalTitle.textContent = '차량 등록';
     editVehicleId.value = '';
+    modalName.value = '';
     modalVehicleNum.value = '';
     modalPhone.value = '';
     modalError.classList.remove('show');
@@ -329,6 +503,7 @@
 
     modalTitle.textContent = '차량 수정';
     editVehicleId.value = id;
+    modalName.value = vehicle.name || '';
     modalVehicleNum.value = vehicle.vehicleNumber;
     modalError.classList.remove('show');
 
@@ -344,10 +519,12 @@
   function closeModal() { vehicleModal.classList.remove('show'); }
 
   async function handleModalSave() {
+    const name = modalName.value.trim();
     const vehicleNum = modalVehicleNum.value.trim();
     const phone = modalPhone.value.trim().replace(/\D/g, '');
     const editId = editVehicleId.value ? parseInt(editVehicleId.value) : null;
 
+    if (!name) { showError(modalError, '이름을 입력하세요.'); return; }
     if (!vehicleNum) { showError(modalError, '차량번호를 입력하세요.'); return; }
     if (!phone) { showError(modalError, '연락처를 입력하세요.'); return; }
 
@@ -360,9 +537,9 @@
 
       if (editId) {
         const idx = appData.vehicles.findIndex(v => v.id === editId);
-        if (idx !== -1) appData.vehicles[idx] = { id: editId, vehicleNumber: vehicleNum, phoneEncrypted };
+        if (idx !== -1) appData.vehicles[idx] = { id: editId, name, vehicleNumber: vehicleNum, phoneEncrypted };
       } else {
-        appData.vehicles.push({ id: nextId++, vehicleNumber: vehicleNum, phoneEncrypted });
+        appData.vehicles.push({ id: nextId++, name, vehicleNumber: vehicleNum, phoneEncrypted });
       }
 
       saveToStorage();
@@ -455,16 +632,28 @@
     showDashboardMsg('관리자 비밀번호가 변경되었습니다.', false);
   }
 
-  // ===== Export / Import =====
-  function saveData() {
-    const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'vehicles.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showDashboardMsg('vehicles.json 다운로드 완료', false);
+  // ===== Export / Import (Excel) =====
+  async function saveData() {
+    if (!lookupPassword) {
+      showDashboardMsg('먼저 조회 비밀번호를 입력해주세요.', true);
+      showLookupPwCard();
+      return;
+    }
+    try {
+      const rows = [];
+      for (const v of appData.vehicles) {
+        const phone = await CryptoUtil.decrypt(v.phoneEncrypted, lookupPassword, appData.lookupSalt);
+        rows.push({ '이름': v.name || '', '차량번호': v.vehicleNumber, '연락처': phone });
+      }
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '차량목록');
+      XLSX.writeFile(wb, 'vehicles.xlsx');
+      showDashboardMsg('vehicles.xlsx 다운로드 완료', false);
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('엑셀 내보내기 중 오류가 발생했습니다.', true);
+    }
   }
 
   function handleLoadData() { fileInput.click(); }
@@ -472,24 +661,49 @@
   fileInput.addEventListener('change', async function(e) {
     const file = e.target.files[0];
     if (!file) return;
-    try {
-      const imported = JSON.parse(await file.text());
-      if (!imported.vehicles || !Array.isArray(imported.vehicles)) {
-        showDashboardMsg('올바른 형식이 아닙니다.', true); return;
-      }
-      if (imported.adminPasswordHash) {
-        const ok = await CryptoUtil.verifyPassword(adminPassword, imported.adminSalt, imported.adminPasswordHash);
-        if (!ok) { showDashboardMsg('관리자 비밀번호가 다릅니다.', true); return; }
-      }
-      appData = imported;
-      lookupPassword = '';
-      saveToStorage();
-      updateNextId();
+    if (!lookupPassword) {
+      showDashboardMsg('먼저 조회 비밀번호를 입력해주세요.', true);
       showLookupPwCard();
+      fileInput.value = '';
+      return;
+    }
+    try {
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      if (!rows.length) {
+        showDashboardMsg('엑셀 파일에 데이터가 없습니다.', true);
+        fileInput.value = '';
+        return;
+      }
+
+      let added = 0;
+      let skipped = 0;
+      for (const row of rows) {
+        const name = String(row['이름'] || '').trim();
+        const vehicleNumber = String(row['차량번호'] || '').trim();
+        const phone = String(row['연락처'] || '').trim().replace(/\D/g, '');
+        if (!vehicleNumber) continue;
+
+        const norm = vehicleNumber.replace(/\s+/g, '');
+        const dup = appData.vehicles.find(v => v.vehicleNumber.replace(/\s+/g, '') === norm);
+        if (dup) { skipped++; continue; }
+
+        const phoneEncrypted = await CryptoUtil.encrypt(phone, lookupPassword, appData.lookupSalt);
+        appData.vehicles.push({ id: nextId++, name, vehicleNumber, phoneEncrypted });
+        added++;
+      }
+
+      saveToStorage();
       await renderVehicleList();
-      showDashboardMsg('불러오기 완료 (' + appData.vehicles.length + '대)', false);
+      let msg = added + '대 추가 완료';
+      if (skipped > 0) msg += ' (중복 ' + skipped + '대 스킵)';
+      showDashboardMsg(msg, false);
     } catch (err) {
-      showDashboardMsg('파일 읽기 오류', true);
+      console.error(err);
+      showDashboardMsg('엑셀 파일 읽기 오류', true);
     }
     fileInput.value = '';
   });
@@ -561,6 +775,7 @@
   adminPwSaveBtn.addEventListener('click', handleChangeAdminPw);
   adminPwModal.addEventListener('click', e => { if (e.target === adminPwModal) closeAdminPwModal(); });
 
+  // 서버에 저장 (버전 관리)
   publishBtn.addEventListener('click', async function() {
     publishBtn.disabled = true;
     publishBtn.textContent = '저장 중...';
@@ -572,7 +787,11 @@
       });
       const result = await resp.json();
       if (result.success) {
+        appData.version = result.version;
+        saveToStorage();
         showDashboardMsg('서버에 저장되었습니다.', false);
+      } else if (result.conflict) {
+        showDashboardMsg(result.error, true);
       } else {
         showDashboardMsg('서버 저장 실패: ' + (result.error || '알 수 없는 오류'), true);
       }
@@ -582,6 +801,19 @@
     } finally {
       publishBtn.disabled = false;
       publishBtn.textContent = '서버에 저장';
+    }
+  });
+
+  // 서버에서 불러오기
+  fetchServerBtn.addEventListener('click', async function() {
+    if (!confirm('서버에서 최신 데이터를 불러옵니다. 로컬 변경사항은 덮어씁니다. 계속하시겠습니까?')) return;
+    fetchServerBtn.disabled = true;
+    fetchServerBtn.textContent = '불러오는 중...';
+    try {
+      await fetchFromServer();
+    } finally {
+      fetchServerBtn.disabled = false;
+      fetchServerBtn.textContent = '서버에서 불러오기';
     }
   });
 
