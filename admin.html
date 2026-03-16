@@ -65,6 +65,31 @@
         <div class="error-msg" id="dashLookupPwError"></div>
       </div>
 
+      <!-- 등록 대기 목록 (상단) -->
+      <div class="card" id="pendingCard" style="display:none;">
+        <h2>등록 대기 목록 <span class="pending-badge" id="pendingBadge">0</span></h2>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:12px;">
+          사용자가 등록 신청한 차량입니다. 승인하면 차량 목록에 추가됩니다.
+        </p>
+        <table class="vehicle-table" id="pendingTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="pendingSelectAll"></th>
+              <th>이름</th>
+              <th>차량번호</th>
+              <th>연락처</th>
+              <th>신청일</th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody"></tbody>
+        </table>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" id="approveSelectedBtn">선택 승인</button>
+          <button class="btn btn-danger btn-sm" id="rejectSelectedBtn">선택 거절</button>
+        </div>
+        <div class="error-msg" id="pendingError"></div>
+      </div>
+
       <div class="card">
         <h1>차량 관리</h1>
 
@@ -107,31 +132,6 @@
         <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
 
         <div class="success-msg" id="dashboardMsg"></div>
-      </div>
-
-      <!-- 등록 대기 목록 -->
-      <div class="card" id="pendingCard" style="display:none;">
-        <h2>등록 대기 목록 <span class="pending-badge" id="pendingBadge">0</span></h2>
-        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:12px;">
-          사용자가 등록 신청한 차량입니다. 승인하면 차량 목록에 추가됩니다.
-        </p>
-        <table class="vehicle-table" id="pendingTable">
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="pendingSelectAll"></th>
-              <th>이름</th>
-              <th>차량번호</th>
-              <th>연락처</th>
-              <th>신청일</th>
-            </tr>
-          </thead>
-          <tbody id="pendingTableBody"></tbody>
-        </table>
-        <div class="btn-group">
-          <button class="btn btn-primary btn-sm" id="approveSelectedBtn">선택 승인</button>
-          <button class="btn btn-danger btn-sm" id="rejectSelectedBtn">선택 거절</button>
-        </div>
-        <div class="error-msg" id="pendingError"></div>
       </div>
     </div>
 

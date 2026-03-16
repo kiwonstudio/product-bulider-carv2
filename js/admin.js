@@ -140,6 +140,25 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   }
 
+  async function publishToServer() {
+    try {
+      const resp = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appData)
+      });
+      const result = await resp.json();
+      if (result.success) {
+        appData.version = result.version;
+        saveToStorage();
+      } else {
+        console.error('서버 동기화 실패:', result.error || '알 수 없는 오류');
+      }
+    } catch (e) {
+      console.error('서버 동기화 실패:', e);
+    }
+  }
+
   async function loadData() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -243,6 +262,7 @@
       appData.lookupSalt = salt;
       lookupPassword = pw;
       saveToStorage();
+      await publishToServer();
       showDashboardMsg('조회 비밀번호가 설정되었습니다.', false);
     }
 
@@ -286,6 +306,7 @@
     appData.adminSalt = salt;
     adminPassword = pw;
     saveToStorage();
+    await publishToServer();
     updateNextId();
     showSection(dashboardSection);
     showLookupPwCard();
@@ -589,6 +610,7 @@
       lookupPassword = newPw;
 
       saveToStorage();
+      await publishToServer();
       closeLookupPwModal();
       hideLookupPwCard();
       await renderVehicleList();
@@ -628,6 +650,7 @@
     adminPassword = newPw;
 
     saveToStorage();
+    await publishToServer();
     closeAdminPwModal();
     showDashboardMsg('관리자 비밀번호가 변경되었습니다.', false);
   }
@@ -798,10 +821,9 @@
     } catch (e) {
       console.error(e);
       showDashboardMsg('서버 연결에 실패했습니다.', true);
-    } finally {
-      publishBtn.disabled = false;
-      publishBtn.textContent = '서버에 저장';
     }
+    publishBtn.disabled = false;
+    publishBtn.textContent = '서버에 저장';
   });
 
   // 서버에서 불러오기
