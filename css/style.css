@@ -242,6 +242,69 @@ input:focus {
   margin-left: 4px;
 }
 
+/* ===== Move Request (User) ===== */
+.btn-move-request {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f97316;
+  color: #fff;
+  margin-top: 12px;
+  transition: background 0.2s;
+}
+
+.btn-move-request:hover {
+  background: #ea580c;
+}
+
+.btn-move-request:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.move-request-msg {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.move-request-msg.success {
+  color: var(--success);
+}
+
+.move-request-msg.error {
+  color: var(--danger);
+}
+
+/* ===== Move Request Card (Admin) ===== */
+.move-request-card {
+  border-left: 4px solid #f97316;
+}
+
+.move-request-badge {
+  display: inline-block;
+  background: #f97316;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  vertical-align: middle;
+  margin-left: 4px;
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.8; }
+}
+
 /* ===== Error / Message ===== */
 .error-msg {
   display: none;

@@ -16,8 +16,12 @@
   const selectList = document.getElementById('selectList');
   const selectListItems = document.getElementById('selectListItems');
 
+  const moveRequestBtn = document.getElementById('moveRequestBtn');
+  const moveRequestMsg = document.getElementById('moveRequestMsg');
+
   let cachedData = null;
   let cachedPassword = '';
+  let currentVehicle = null;
 
   function showError(msg) {
     errorMsg.textContent = msg;
@@ -118,9 +122,43 @@
     vehicleInfo.textContent = '차량번호: ' + vehicle.vehicleNumber;
     ownerName.textContent = vehicle.name ? '이름: ' + vehicle.name : '';
     phoneResult.innerHTML = '<a href="tel:' + phone + '">' + formatPhone(phone) + '</a>';
+    currentVehicle = vehicle;
+    moveRequestBtn.style.display = '';
+    moveRequestMsg.textContent = '';
+    moveRequestMsg.className = 'move-request-msg';
     result.classList.add('show');
     selectList.classList.remove('show');
     selectList.style.display = 'none';
+  }
+
+  async function handleMoveRequest() {
+    if (!currentVehicle) return;
+    moveRequestBtn.disabled = true;
+    moveRequestBtn.textContent = '요청 중...';
+    try {
+      const resp = await fetch('/api/move-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicleNumber: currentVehicle.vehicleNumber,
+          name: currentVehicle.name || ''
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        moveRequestMsg.textContent = '차량이동 요청이 전송되었습니다.';
+        moveRequestMsg.className = 'move-request-msg success';
+        moveRequestBtn.style.display = 'none';
+      } else {
+        moveRequestMsg.textContent = data.error || '요청에 실패했습니다.';
+        moveRequestMsg.className = 'move-request-msg error';
+      }
+    } catch (e) {
+      moveRequestMsg.textContent = '서버 연결에 실패했습니다.';
+      moveRequestMsg.className = 'move-request-msg error';
+    }
+    moveRequestBtn.disabled = false;
+    moveRequestBtn.textContent = '🚗 차량이동 요청';
   }
 
   function formatPhone(phone) {
@@ -131,6 +169,7 @@
   }
 
   searchBtn.addEventListener('click', search);
+  moveRequestBtn.addEventListener('click', handleMoveRequest);
   passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
   vehicleInput.addEventListener('keydown', e => { if (e.key === 'Enter') passwordInput.focus(); });
 })();

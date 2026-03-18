@@ -65,6 +65,28 @@
         <div class="error-msg" id="dashLookupPwError"></div>
       </div>
 
+      <!-- 차량이동 요청 목록 (최상단) -->
+      <div class="card move-request-card" id="moveRequestCard" style="display:none;">
+        <h2>차량이동 요청 <span class="move-request-badge" id="moveRequestBadge">0</span></h2>
+        <p style="color:var(--text-light); font-size:0.85rem; margin-bottom:12px;">
+          사용자가 차량이동을 요청했습니다.
+        </p>
+        <table class="vehicle-table" id="moveRequestTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="moveRequestSelectAll"></th>
+              <th>차량번호</th>
+              <th>이름</th>
+              <th>요청시간</th>
+            </tr>
+          </thead>
+          <tbody id="moveRequestTableBody"></tbody>
+        </table>
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" id="moveRequestConfirmBtn">선택 확인(삭제)</button>
+        </div>
+      </div>
+
       <!-- 등록 대기 목록 (상단) -->
       <div class="card" id="pendingCard" style="display:none;">
         <h2>등록 대기 목록 <span class="pending-badge" id="pendingBadge">0</span></h2>

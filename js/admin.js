@@ -59,6 +59,13 @@
   const logoutBtn = $('logoutBtn');
   const dashboardMsg = $('dashboardMsg');
 
+  // Move Request
+  const moveRequestCard = $('moveRequestCard');
+  const moveRequestBadge = $('moveRequestBadge');
+  const moveRequestTableBody = $('moveRequestTableBody');
+  const moveRequestSelectAll = $('moveRequestSelectAll');
+  const moveRequestConfirmBtn = $('moveRequestConfirmBtn');
+
   // Pending
   const pendingCard = $('pendingCard');
   const pendingBadge = $('pendingBadge');
@@ -303,6 +310,10 @@
     showLookupPwCard();
     await renderVehicleList();
     await loadPendingRegistrations();
+    startMoveRequestPolling();
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }
 
   async function handleSetup() {
@@ -322,6 +333,7 @@
     showLookupPwCard();
     await renderVehicleList();
     await loadPendingRegistrations();
+    startMoveRequestPolling();
   }
 
   // ===== Vehicle List =====
@@ -496,6 +508,124 @@
       showDashboardMsg('거절 처리 중 오류가 발생했습니다.', true);
     }
   });
+
+  // ===== Move Requests =====
+  let moveRequestList = [];
+  let moveRequestPollTimer = null;
+  let lastMoveRequestCount = 0;
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.value = 0.3;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {}
+  }
+
+  function showBrowserNotification(count) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      new Notification('차량이동 요청', { body: count + '건의 새 이동 요청이 있습니다.', icon: '🚗' });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+  }
+
+  async function loadMoveRequests() {
+    try {
+      const resp = await fetch('/api/move-request');
+      if (resp.ok) {
+        const data = await resp.json();
+        const newList = data.requests || [];
+        const isNew = newList.length > lastMoveRequestCount && lastMoveRequestCount >= 0;
+        lastMoveRequestCount = newList.length;
+        moveRequestList = newList;
+        renderMoveRequestList();
+        if (isNew && newList.length > 0) {
+          playBeep();
+          showBrowserNotification(newList.length);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load move requests', e);
+    }
+  }
+
+  function renderMoveRequestList() {
+    moveRequestTableBody.innerHTML = '';
+
+    if (moveRequestList.length === 0) {
+      moveRequestCard.style.display = 'none';
+      return;
+    }
+
+    moveRequestCard.style.display = '';
+    moveRequestBadge.textContent = moveRequestList.length;
+
+    for (const r of moveRequestList) {
+      const tr = document.createElement('tr');
+      const time = r.requestedAt ? new Date(r.requestedAt).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+      tr.innerHTML =
+        '<td><input type="checkbox" class="move-request-check" data-id="' + r.id + '"></td>' +
+        '<td>' + escapeHtml(r.vehicleNumber) + '</td>' +
+        '<td>' + escapeHtml(r.name || '') + '</td>' +
+        '<td style="font-size:0.8rem;">' + time + '</td>';
+      moveRequestTableBody.appendChild(tr);
+    }
+  }
+
+  moveRequestSelectAll.addEventListener('change', function() {
+    document.querySelectorAll('.move-request-check').forEach(cb => { cb.checked = moveRequestSelectAll.checked; });
+  });
+
+  moveRequestConfirmBtn.addEventListener('click', async function() {
+    const checked = document.querySelectorAll('.move-request-check:checked');
+    if (checked.length === 0) {
+      showDashboardMsg('확인할 이동 요청을 선택하세요.', true);
+      return;
+    }
+
+    const ids = Array.from(checked).map(cb => parseInt(cb.dataset.id));
+
+    try {
+      await fetch('/api/move-request', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+
+      moveRequestList = moveRequestList.filter(r => !ids.includes(r.id));
+      lastMoveRequestCount = moveRequestList.length;
+      moveRequestSelectAll.checked = false;
+      renderMoveRequestList();
+      showDashboardMsg(ids.length + '건의 이동 요청을 확인 처리했습니다.', false);
+    } catch (e) {
+      console.error(e);
+      showDashboardMsg('이동 요청 처리 중 오류가 발생했습니다.', true);
+    }
+  });
+
+  function startMoveRequestPolling() {
+    if (moveRequestPollTimer) return;
+    lastMoveRequestCount = -1;
+    loadMoveRequests();
+    moveRequestPollTimer = setInterval(loadMoveRequests, 5000);
+  }
+
+  function stopMoveRequestPolling() {
+    if (moveRequestPollTimer) {
+      clearInterval(moveRequestPollTimer);
+      moveRequestPollTimer = null;
+    }
+    lastMoveRequestCount = 0;
+  }
 
   // ===== Select All / Delete =====
   selectAll.addEventListener('change', function() {
@@ -767,6 +897,7 @@
 
   // ===== Logout =====
   function logout() {
+    stopMoveRequestPolling();
     adminPassword = '';
     lookupPassword = '';
     adminPasswordInput.value = '';
