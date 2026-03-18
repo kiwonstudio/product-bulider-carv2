@@ -18,10 +18,14 @@
 
   const moveRequestBtn = document.getElementById('moveRequestBtn');
   const moveRequestMsg = document.getElementById('moveRequestMsg');
+  const notFoundMoveRequest = document.getElementById('notFoundMoveRequest');
+  const notFoundMoveBtn = document.getElementById('notFoundMoveBtn');
+  const notFoundMoveMsg = document.getElementById('notFoundMoveMsg');
 
   let cachedData = null;
   let cachedPassword = '';
   let currentVehicle = null;
+  let searchedInput = '';
 
   function showError(msg) {
     errorMsg.textContent = msg;
@@ -29,6 +33,7 @@
     result.classList.remove('show');
     selectList.classList.remove('show');
     selectList.style.display = 'none';
+    notFoundMoveRequest.style.display = 'none';
   }
 
   function hideMessages() {
@@ -36,6 +41,7 @@
     result.classList.remove('show');
     selectList.classList.remove('show');
     selectList.style.display = 'none';
+    notFoundMoveRequest.style.display = 'none';
   }
 
   function setLoading(on) {
@@ -78,7 +84,16 @@
       if (!isValidPw) { showError('조회 비밀번호가 일치하지 않습니다.'); setLoading(false); return; }
 
       const matches = data.vehicles.filter(v => getLast4(v.vehicleNumber) === input);
-      if (matches.length === 0) { showError('등록되지 않은 차량번호입니다.'); setLoading(false); return; }
+      if (matches.length === 0) {
+        showError('등록되지 않은 차량번호입니다.');
+        searchedInput = input;
+        notFoundMoveMsg.textContent = '';
+        notFoundMoveMsg.className = 'move-request-msg';
+        notFoundMoveBtn.style.display = '';
+        notFoundMoveRequest.style.display = 'block';
+        setLoading(false);
+        return;
+      }
 
       cachedData = data;
       cachedPassword = password;
@@ -168,8 +183,39 @@
     return phone;
   }
 
+  async function handleNotFoundMoveRequest() {
+    if (!searchedInput) return;
+    notFoundMoveBtn.disabled = true;
+    notFoundMoveBtn.textContent = '요청 중...';
+    try {
+      const resp = await fetch('/api/move-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicleNumber: '(뒷번호) ' + searchedInput,
+          name: ''
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        notFoundMoveMsg.textContent = '차량이동 요청이 전송되었습니다.';
+        notFoundMoveMsg.className = 'move-request-msg success';
+        notFoundMoveBtn.style.display = 'none';
+      } else {
+        notFoundMoveMsg.textContent = data.error || '요청에 실패했습니다.';
+        notFoundMoveMsg.className = 'move-request-msg error';
+      }
+    } catch (e) {
+      notFoundMoveMsg.textContent = '서버 연결에 실패했습니다.';
+      notFoundMoveMsg.className = 'move-request-msg error';
+    }
+    notFoundMoveBtn.disabled = false;
+    notFoundMoveBtn.textContent = '🚗 차량이동 요청';
+  }
+
   searchBtn.addEventListener('click', search);
   moveRequestBtn.addEventListener('click', handleMoveRequest);
+  notFoundMoveBtn.addEventListener('click', handleNotFoundMoveRequest);
   passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
   vehicleInput.addEventListener('keydown', e => { if (e.key === 'Enter') passwordInput.focus(); });
 })();

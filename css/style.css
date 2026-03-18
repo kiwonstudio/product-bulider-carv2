@@ -282,6 +282,14 @@ input:focus {
   color: var(--danger);
 }
 
+.not-found-move-request {
+  margin-top: 12px;
+  padding: 16px;
+  background: #fff7ed;
+  border-radius: 8px;
+  text-align: center;
+}
+
 /* ===== Move Request Card (Admin) ===== */
 .move-request-card {
   border-left: 4px solid #f97316;
