@@ -164,6 +164,9 @@
         moveRequestMsg.textContent = '차량이동 요청이 전송되었습니다.';
         moveRequestMsg.className = 'move-request-msg success';
         moveRequestBtn.style.display = 'none';
+        setTimeout(() => {
+          window.location.href = 'info.html?vehicle=' + encodeURIComponent(currentVehicle.vehicleNumber);
+        }, 800);
       } else {
         moveRequestMsg.textContent = data.error || '요청에 실패했습니다.';
         moveRequestMsg.className = 'move-request-msg error';
@@ -201,6 +204,9 @@
         notFoundMoveMsg.textContent = '차량이동 요청이 전송되었습니다.';
         notFoundMoveMsg.className = 'move-request-msg success';
         notFoundMoveBtn.style.display = 'none';
+        setTimeout(() => {
+          window.location.href = 'info.html?vehicle=' + encodeURIComponent('(뒷번호) ' + searchedInput);
+        }, 800);
       } else {
         notFoundMoveMsg.textContent = data.error || '요청에 실패했습니다.';
         notFoundMoveMsg.className = 'move-request-msg error';

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>차량이동 요청</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    .info-container {
+      text-align: center;
+      padding: 40px 24px;
+      max-width: 600px;
+      width: 100%;
+    }
+    .vehicle-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 16px;
+      word-break: break-all;
+    }
+    .info-message {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 40px;
+    }
+    .back-btn {
+      display: inline-block;
+      padding: 14px 40px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .back-btn:hover {
+      background: var(--primary-hover);
+    }
+    .auto-return {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <div class="info-container">
+    <div class="vehicle-number" id="vehicleNumber"></div>
+    <div class="info-message" id="infoMessage"></div>
+    <a href="index.html" class="back-btn">돌아가기</a>
+    <div class="auto-return" id="autoReturn"></div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const vehicle = params.get('vehicle');
+    const vehicleEl = document.getElementById('vehicleNumber');
+    const messageEl = document.getElementById('infoMessage');
+    const autoReturnEl = document.getElementById('autoReturn');
+
+    if (vehicle) {
+      vehicleEl.textContent = vehicle;
+      messageEl.textContent = '차량 이동을 부탁 드립니다';
+
+      let remaining = 30;
+      autoReturnEl.textContent = remaining + '초 후 자동으로 돌아갑니다';
+      const timer = setInterval(() => {
+        remaining--;
+        autoReturnEl.textContent = remaining + '초 후 자동으로 돌아갑니다';
+        if (remaining <= 0) {
+          clearInterval(timer);
+          window.location.href = 'index.html';
+        }
+      }, 1000);
+    } else {
+      vehicleEl.textContent = '';
+      messageEl.textContent = '차량 정보가 없습니다';
+      autoReturnEl.textContent = '';
+    }
+  </script>
+</body>
+</html>
