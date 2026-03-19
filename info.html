@@ -138,9 +138,9 @@
   <!-- Login Screen -->
   <div class="login-container" id="loginScreen">
     <h1>차량이동 전광판</h1>
-    <p class="subtitle">관리자 비밀번호를 입력하세요</p>
+    <p class="subtitle">조회 비밀번호를 입력하세요</p>
     <div class="form-group">
-      <input type="password" id="adminPwInput" placeholder="관리자 비밀번호">
+      <input type="password" id="adminPwInput" placeholder="조회 비밀번호">
     </div>
     <button class="btn btn-primary" id="loginBtn">로그인</button>
     <div class="error-msg" id="loginError"></div>
@@ -191,14 +191,14 @@
         }
         const data = await resp.json();
 
-        if (!data.adminPasswordHash || !data.adminSalt) {
-          showLoginError('관리자가 아직 설정되지 않았습니다.');
+        if (!data.lookupPasswordHash || !data.lookupSalt) {
+          showLoginError('조회 비밀번호가 아직 설정되지 않았습니다.');
           return;
         }
 
-        const isValid = await CryptoUtil.verifyPassword(pw, data.adminSalt, data.adminPasswordHash);
+        const isValid = await CryptoUtil.verifyPassword(pw, data.lookupSalt, data.lookupPasswordHash);
         if (!isValid) {
-          showLoginError('관리자 비밀번호가 일치하지 않습니다.');
+          showLoginError('조회 비밀번호가 일치하지 않습니다.');
           return;
         }
 
