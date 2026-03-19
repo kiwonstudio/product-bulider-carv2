@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>차량이동 요청</title>
+  <title>차량이동 전광판</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
     body {
@@ -11,83 +11,311 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: var(--bg);
+      background: #0f172a;
+      margin: 0;
     }
-    .info-container {
+
+    /* ===== Login Screen ===== */
+    .login-container {
       text-align: center;
       padding: 40px 24px;
-      max-width: 600px;
+      max-width: 400px;
       width: 100%;
     }
-    .vehicle-number {
-      font-size: 3rem;
-      font-weight: 800;
-      color: var(--primary);
+    .login-container h1 {
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .login-container .subtitle {
+      color: #94a3b8;
+      margin-bottom: 24px;
+      margin-top: 0;
+    }
+    .login-container .form-group {
       margin-bottom: 16px;
+    }
+    .login-container input[type="password"] {
+      text-align: center;
+      font-size: 1.2rem;
+      padding: 14px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      color: #fff;
+      border-radius: 8px;
+    }
+    .login-container input[type="password"]:focus {
+      border-color: var(--primary);
+    }
+    .login-container .error-msg {
+      margin-top: 12px;
+    }
+
+    /* ===== Display Screen ===== */
+    .display-container {
+      display: none;
+      text-align: center;
+      width: 100%;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .display-container.active {
+      display: flex;
+    }
+
+    /* Idle state */
+    .idle-message {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #475569;
+      animation: pulse-idle 3s ease-in-out infinite;
+    }
+    @keyframes pulse-idle {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Request state */
+    .request-display {
+      display: none;
+    }
+    .request-display.active {
+      display: block;
+    }
+    .request-vehicle {
+      font-size: 8rem;
+      font-weight: 900;
+      color: #facc15;
+      text-shadow: 0 0 40px rgba(250, 204, 21, 0.4);
+      line-height: 1.1;
+      margin-bottom: 24px;
       word-break: break-all;
     }
-    .info-message {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 40px;
-    }
-    .back-btn {
-      display: inline-block;
-      padding: 14px 40px;
-      background: var(--primary);
+    .request-message {
+      font-size: 3rem;
+      font-weight: 700;
       color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 1.1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s;
+      margin-bottom: 16px;
     }
-    .back-btn:hover {
-      background: var(--primary-hover);
+    .request-count {
+      font-size: 1.5rem;
+      color: #94a3b8;
+      margin-top: 16px;
     }
-    .auto-return {
-      margin-top: 20px;
-      font-size: 0.9rem;
-      color: var(--text-light);
+    .request-time {
+      font-size: 1rem;
+      color: #64748b;
+      margin-top: 8px;
+    }
+
+    /* Flash animation on new request */
+    @keyframes flash-in {
+      0% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .request-display.flash {
+      animation: flash-in 0.6s ease-out;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .request-vehicle { font-size: 4rem; }
+      .request-message { font-size: 1.8rem; }
+      .idle-message { font-size: 1.8rem; }
+    }
+    @media (max-width: 480px) {
+      .request-vehicle { font-size: 3rem; }
+      .request-message { font-size: 1.3rem; }
+      .idle-message { font-size: 1.3rem; }
     }
   </style>
 </head>
 <body>
-  <div class="info-container">
-    <div class="vehicle-number" id="vehicleNumber"></div>
-    <div class="info-message" id="infoMessage"></div>
-    <a href="index.html" class="back-btn">돌아가기</a>
-    <div class="auto-return" id="autoReturn"></div>
+
+  <!-- Login Screen -->
+  <div class="login-container" id="loginScreen">
+    <h1>차량이동 전광판</h1>
+    <p class="subtitle">관리자 비밀번호를 입력하세요</p>
+    <div class="form-group">
+      <input type="password" id="adminPwInput" placeholder="관리자 비밀번호">
+    </div>
+    <button class="btn btn-primary" id="loginBtn">로그인</button>
+    <div class="error-msg" id="loginError"></div>
   </div>
+
+  <!-- Display Screen -->
+  <div class="display-container" id="displayScreen">
+    <div class="idle-message" id="idleMessage">차량이동 요청 대기 중...</div>
+    <div class="request-display" id="requestDisplay">
+      <div class="request-vehicle" id="requestVehicle"></div>
+      <div class="request-message">차량 이동을 부탁 드립니다</div>
+      <div class="request-count" id="requestCount"></div>
+      <div class="request-time" id="requestTime"></div>
+    </div>
+  </div>
+
+  <script src="js/crypto.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const vehicle = params.get('vehicle');
-    const vehicleEl = document.getElementById('vehicleNumber');
-    const messageEl = document.getElementById('infoMessage');
-    const autoReturnEl = document.getElementById('autoReturn');
+  (function() {
+    const loginScreen = document.getElementById('loginScreen');
+    const displayScreen = document.getElementById('displayScreen');
+    const adminPwInput = document.getElementById('adminPwInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const idleMessage = document.getElementById('idleMessage');
+    const requestDisplay = document.getElementById('requestDisplay');
+    const requestVehicle = document.getElementById('requestVehicle');
+    const requestCount = document.getElementById('requestCount');
+    const requestTime = document.getElementById('requestTime');
 
-    if (vehicle) {
-      vehicleEl.textContent = vehicle;
-      messageEl.textContent = '차량 이동을 부탁 드립니다';
+    let pollTimer = null;
+    let lastRequestCount = 0;
+    let currentRequests = [];
 
-      let remaining = 30;
-      autoReturnEl.textContent = remaining + '초 후 자동으로 돌아갑니다';
-      const timer = setInterval(() => {
-        remaining--;
-        autoReturnEl.textContent = remaining + '초 후 자동으로 돌아갑니다';
-        if (remaining <= 0) {
-          clearInterval(timer);
-          window.location.href = 'index.html';
+    // ===== Login =====
+    async function handleLogin() {
+      const pw = adminPwInput.value;
+      if (!pw) {
+        showLoginError('비밀번호를 입력하세요.');
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/vehicles');
+        if (!resp.ok) {
+          showLoginError('서버에 연결할 수 없습니다.');
+          return;
         }
-      }, 1000);
-    } else {
-      vehicleEl.textContent = '';
-      messageEl.textContent = '차량 정보가 없습니다';
-      autoReturnEl.textContent = '';
+        const data = await resp.json();
+
+        if (!data.adminPasswordHash || !data.adminSalt) {
+          showLoginError('관리자가 아직 설정되지 않았습니다.');
+          return;
+        }
+
+        const isValid = await CryptoUtil.verifyPassword(pw, data.adminSalt, data.adminPasswordHash);
+        if (!isValid) {
+          showLoginError('관리자 비밀번호가 일치하지 않습니다.');
+          return;
+        }
+
+        // Login success — switch to display
+        loginScreen.style.display = 'none';
+        displayScreen.classList.add('active');
+        startPolling();
+      } catch (e) {
+        showLoginError('서버 연결에 실패했습니다.');
+      }
     }
+
+    function showLoginError(msg) {
+      loginError.textContent = msg;
+      loginError.classList.add('show');
+    }
+
+    loginBtn.addEventListener('click', handleLogin);
+    adminPwInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+
+    // ===== Polling =====
+    function startPolling() {
+      lastRequestCount = -1;
+      loadMoveRequests();
+      pollTimer = setInterval(loadMoveRequests, 5000);
+    }
+
+    async function loadMoveRequests() {
+      try {
+        const resp = await fetch('/api/move-request');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const requests = data.requests || [];
+
+        const isNew = requests.length > lastRequestCount && lastRequestCount >= 0;
+        lastRequestCount = requests.length;
+        currentRequests = requests;
+
+        updateDisplay();
+
+        if (isNew && requests.length > 0) {
+          playBeep();
+          // Flash animation
+          requestDisplay.classList.remove('flash');
+          void requestDisplay.offsetWidth; // force reflow
+          requestDisplay.classList.add('flash');
+        }
+      } catch (e) {
+        console.error('Polling error:', e);
+      }
+    }
+
+    // ===== Display Update =====
+    function updateDisplay() {
+      if (currentRequests.length === 0) {
+        // Idle state
+        idleMessage.style.display = '';
+        requestDisplay.classList.remove('active');
+      } else {
+        // Show latest request
+        idleMessage.style.display = 'none';
+        requestDisplay.classList.add('active');
+
+        const latest = currentRequests[currentRequests.length - 1];
+        requestVehicle.textContent = latest.vehicleNumber;
+
+        if (currentRequests.length > 1) {
+          requestCount.textContent = '총 ' + currentRequests.length + '건의 이동 요청';
+        } else {
+          requestCount.textContent = '';
+        }
+
+        if (latest.requestedAt) {
+          const time = new Date(latest.requestedAt).toLocaleString('ko-KR', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+          });
+          requestTime.textContent = '요청 시각: ' + time;
+        } else {
+          requestTime.textContent = '';
+        }
+      }
+    }
+
+    // ===== Beep =====
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+
+        // Second beep after short pause
+        setTimeout(function() {
+          try {
+            const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+            const osc2 = ctx2.createOscillator();
+            const gain2 = ctx2.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx2.destination);
+            osc2.frequency.value = 1100;
+            osc2.type = 'sine';
+            gain2.gain.value = 0.3;
+            osc2.start();
+            osc2.stop(ctx2.currentTime + 0.3);
+          } catch (e) {}
+        }, 350);
+      } catch (e) {}
+    }
+  })();
   </script>
 </body>
 </html>
